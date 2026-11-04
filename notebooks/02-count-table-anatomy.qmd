@@ -1,0 +1,224 @@
+---
+title: "Module 2 — Count Table Anatomy"
+format: html
+editor: source
+execute:
+  warning: false
+  message: false
+---
+
+> Use Pi freely. Each exercise ends with a **Part 3 — Check the agent**. That
+> part is the point: the skill we are building is catching a confident wrong
+> answer, not avoiding the agent.
+
+```{r setup}
+library(tidyverse)
+library(here)
+
+source(here("R/count_tables.R"))
+
+d <- read_counts("instructional")
+
+metadata <- d$metadata
+species  <- d$species    # 220 species   x 471 samples
+genes    <- d$genes      # 14,226 genes  x 471 samples
+taxonomy <- d$taxonomy
+```
+
+```{r}
+metadata
+```
+
+# Exercise 1: What is in these two files?
+
+## Part 1 — Predict (no code)
+
+Answer before running anything below.
+
+**1. Of the 220 species, how many will you see in a single sample?**
+
+- *Your answer:*
+
+**2. Of the 14,226 genes, how many will you see in a single sample?**
+
+- *Your answer:*
+
+**3. Which table has a larger share of zero cells?**
+
+- *Your answer:*
+
+**4. One sample has 438 bacterial reads against a median of about 28,700. What will be wrong with it?**
+
+- *Your answer:*
+
+**5. A typical sample behaves like how many equally common species? Like how many equally expressed genes?**
+
+- *Your answer:*
+
+## Part 2 — Build
+
+```{r}
+# step 1: check the shapes line up with the metadata
+dim(species)
+dim(genes)
+
+all(colnames(species) == metadata$sample_id)
+all(colnames(genes) == metadata$sample_id)
+```
+
+```{r}
+# step 2: the four per-sample summaries, for ONE table first.
+# Fill this in for `species`, then turn it into a function.
+
+```
+
+```{r}
+# step 3: make it a function and run it on both tables, so you end up with one
+# tidy data frame that has a `table` column saying "species" or "genes".
+#
+# summarise_table <- function(counts, label) { ... }
+
+```
+
+```{r}
+# step 4: plot library size for both tables. You will want a log scale.
+
+```
+
+```{r}
+# step 5: plot features_detected against library_size, faceted by table.
+# Then the Spearman correlation for each table:
+#   cor(library_size, features_detected, method = "spearman")
+# How many extra features does the trend actually amount to?
+
+```
+
+```{r}
+# step 6: find the sample with 438 bacterial reads and look at its whole column.
+
+```
+
+```{r}
+# step 7: add Shannon diversity and the effective number of features.
+#
+# shannon   <- vegan::diversity(t(counts), index = "shannon")
+# effective <- exp(shannon)
+#
+# Median effective number in each table? Compare with your prediction and with
+# features_detected.
+
+```
+
+## Part 3 — Check the agent
+
+Work through these with Pi, and write what you found.
+
+- Do its library sizes match `sum()` of one column you pick yourself?
+  - *Your answer:*
+- Is `features_detected` never larger than the number of rows, for every sample?
+  - *Your answer:*
+- Does its data frame have 942 rows, 471 for each table? If it has 471, it dropped a table.
+  - *Your answer:*
+- Ask it which samples to drop, then ask what happens if you keep them. Do the two answers agree?
+  - *Your answer:*
+- Ask which logarithm `vegan::diversity()` uses, then what the effective number would be with log base 2. Does the effective number change?
+  - *Your answer:*
+
+# Exercise 2: Filtering, normalising, and one column you need all week
+
+## Part 1 — Predict (no code)
+
+**1. Keeping only species present in at least 10% of samples: how many of the 220 survive, and what share of reads is lost?**
+
+- *Your answer:*
+
+**2. The same 10% rule applied to 14,226 genes: how many survive?**
+
+- *Your answer:*
+
+**3. To compare one species between two samples, what must you do to the counts first?**
+
+- *Your answer:*
+
+## Part 2 — Build
+
+```{r}
+# step 1: prevalence for every feature in both tables, then plot the distributions.
+
+```
+
+```{r}
+# step 2: for cutoffs 0 to 0.9, how many features survive and what share of all
+# counts survives? Plot both. This is the figure that shows a prevalence filter
+# is right for one table and wrong for the other.
+
+```
+
+```{r}
+# step 3: choose and apply a filter to each table. Write one sentence per table
+# in the text below saying why.
+#
+# For the gene table, filter on expression level, not prevalence.
+
+```
+
+*Why I filtered the species table this way:*
+
+*Why I filtered the gene table this way:*
+
+```{r}
+# step 4: convert both filtered tables to CPM, then to log2(cpm + 1).
+# Plot one feature before and after.
+
+```
+
+```{r}
+# step 5: THE IMPORTANT ONE.
+# From the species table, compute each sample's Lactobacillus fraction.
+# `taxonomy` tells you which species belong to that genus.
+#
+# Then make a `community` column: "lactobacillus" if the fraction is >= 0.5,
+# "anaerobe" otherwise.
+
+```
+
+```{r}
+# step 6: save it. This afternoon's notebook reads this file back, and so does
+# Wednesday's.
+#
+# write_csv(sample_groups, here("data/my_sample_groups.csv"))
+
+```
+
+```{r}
+# step 7: compare the effective number of species between the two community
+# groups, as a boxplot on a log scale. Which group is more diverse, and is that
+# what you would call healthy?
+
+```
+
+```{r}
+# step 7: how many samples in each group? Does the split change across visits?
+
+```
+
+## Part 3 — Check the agent
+
+- Ask Pi to compute the Lactobacillus fraction. Does its answer for one sample match yours to three decimals?
+  - *Your answer:*
+- Ask which species names it matched, and read the list. Did partial or case-insensitive matching catch anything it should not have?
+  - *Your answer:*
+- Is `lacto_fraction` between 0 and 1 for every sample? Check the min and max.
+  - *Your answer:*
+- Ask it to justify the 0.5 cutoff. Is the justification real, or just fluent?
+  - *Your answer:*
+
+## Part 4 — Reach (optional)
+
+```{r}
+# Run your whole per-sample summary on a group project dataset.
+# The column names are identical, so this should work unchanged.
+#
+# ga <- read_counts("group_a")
+
+```

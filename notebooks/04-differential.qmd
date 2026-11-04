@@ -1,0 +1,207 @@
+---
+title: "Module 4 — Differential Testing"
+format: html
+editor: source
+execute:
+  warning: false
+  message: false
+---
+
+> Raw counts go into DESeq2. Never CPM, never logged. The method does its own
+> normalisation and feeding it normalised data breaks it.
+
+```{r setup}
+library(tidyverse)
+library(here)
+library(DESeq2)
+
+source(here("R/count_tables.R"))
+
+d <- read_counts("instructional")
+
+# The grouping you built and saved in notebook 02. If it is not there yet, this
+# stops with a clear message instead of a confusing one.
+groups_file <- here("data/my_sample_groups.csv")
+if (!file.exists(groups_file)) {
+  stop("Could not find ", groups_file,
+       "\nGo back to notebook 02, Exercise 2, step 6 and save your per-sample ",
+       "table with the `community` column. Or rebuild it here: the Lactobacillus ",
+       "fraction from the species table, split at 0.5.", call. = FALSE)
+}
+sample_groups <- read_csv(groups_file)
+
+metadata <- d$metadata |> left_join(sample_groups, by = "sample_id")
+```
+
+```{r}
+count(metadata, time_point, community)
+```
+
+# Exercise 1: Test the gene table with a grouping from the species table
+
+## Part 1 — Predict (no code)
+
+**1. Testing 13,738 genes, how many get a raw p-value below 0.05 if nothing is truly different?**
+
+- *Your answer:*
+
+**2. Would you rather have 157 samples at one visit, or 471 across three visits? Why?**
+
+- *Your answer:*
+
+**3. Will more significant genes be higher in anaerobe-dominant or Lactobacillus-dominant samples?**
+
+- *Your answer:*
+
+## Part 2 — Build
+
+```{r}
+# step 1: subset to week_18. Confirm 157 samples AND that the count matrix
+# columns are in the same order as the sample table rows.
+#
+# DESeq2 will not warn you about the order. It will just give you nonsense.
+
+```
+
+```{r}
+# step 2: filter genes. Keep a gene with a count of at least 10 in at least a
+# quarter of the samples.
+
+```
+
+```{r}
+# step 3: the three lines.
+#
+# dds <- DESeqDataSetFromMatrix(counts, sample_table, ~ community)
+# dds <- DESeq(dds)
+# res <- results(dds, contrast = c("community", "anaerobe", "lactobacillus"))
+
+```
+
+```{r}
+# step 4: how many genes at padj < 0.05? How many of those with |log2FC| > 1?
+
+```
+
+```{r}
+# step 5: join d$gene_info so you have symbols, sort by padj, read the top 20
+# names out loud to your group.
+
+```
+
+```{r}
+# step 6: volcano plot.
+
+```
+
+```{r}
+# step 7: boxplot of normalised counts for the top gene, by community.
+# The direction of this plot MUST match the sign of its log2FoldChange.
+
+```
+
+*Does the boxplot direction match the sign?*
+
+## Part 3 — Check the agent
+
+- Ask Pi how many genes were significant, then how many went in. If it cannot say both, it does not know what it did.
+  - *Your answer:*
+- Ask it to explain your contrast's sign convention, then check it against step 7.
+  - *Your answer:*
+- Ask for counts at `pvalue < 0.05` as well as `padj < 0.05`. The first should be far larger.
+  - *Your answer:*
+- Ask it to rerun the test on CPM instead of raw counts. It probably will. What happens, and why is it wrong?
+  - *Your answer:*
+
+# Exercise 2: The same test, on the species table
+
+## Part 1 — Predict (no code)
+
+**1. Why can you not test the species table with the `community` column you built from it?**
+
+- *Your answer:*
+
+**2. How many of the 220 species survive "present in at least 10% of samples"? How many of those are present in all 157 samples?**
+
+- *Your answer:*
+
+**3. If any species are significant, will they be higher in preterm or in term?**
+
+- *Your answer:*
+
+## Part 2 — Build
+
+```{r}
+# step 1: week_18 again, and filter species to 10% prevalence.
+
+```
+
+```{r}
+# step 2: same three lines, with ~ outcome and
+# contrast = c("outcome", "preterm", "term"). How many significant?
+
+```
+
+```{r}
+# step 3: how did DESeq2 normalise? Count species with no zero in any sample:
+#   sum(rowSums(counts == 0) == 0)
+# Then plot sizeFactors(dds) against each sample's L. iners share, both on log
+# scales.
+
+```
+
+*What are the size factors really measuring?*
+
+```{r}
+# step 4: rerun with size factors built for a table full of zeros. Keep this
+# version for the rest of the exercise and for tomorrow.
+#
+# dds <- DESeqDataSetFromMatrix(counts, sample_table, ~ outcome)
+# dds <- estimateSizeFactors(dds, type = "poscounts")
+# dds <- DESeq(dds)
+# res <- results(dds, contrast = c("outcome", "preterm", "term"))
+
+```
+
+```{r}
+# step 5: join d$taxonomy for readable names. List the top ten species by padj
+# with their fold changes, whether or not any pass. How many lean preterm?
+
+```
+
+```{r}
+# step 6: plot relative abundance of the top three species by outcome.
+# Proportions, not raw counts. Consider a log scale.
+
+```
+
+```{r}
+# step 7: now ask the same ~ outcome question of the GENE table and compare:
+# features tested, number significant, and what share of the significant ones
+# changed by more than a factor of two. Save these gene results: tomorrow's
+# enrichment notebook starts from them.
+
+```
+
+*What that comparison tells me about where the outcome signal lives:*
+
+## Part 3 — Check the agent
+
+- Ask Pi how many species it kept, then recompute it yourself from `rowMeans(counts > 0)`.
+  - *Your answer:*
+- Ask whether DESeq2 is appropriate for microbiome counts. This is a real controversy; a confident one-sided answer is a warning sign.
+  - *Your answer:*
+- Ask Pi how DESeq2 computed the species size factors, and how many species went into them. Compare with your step 3.
+  - *Your answer:*
+- Ask it to name the top species, then check two against `d$taxonomy` by hand. Agents invent plausible species names.
+  - *Your answer:*
+- Ask it to group by `nugent >= 7` instead. Fewer samples have a Nugent score. Does it tell you it dropped samples?
+  - *Your answer:*
+
+## Part 4 — Reach (optional)
+
+```{r}
+# Run species ~ outcome on all 471 samples, each participant appearing three times.
+# More samples gave you more hits. Are they real? What assumption did you break?
+
+```

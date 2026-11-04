@@ -1,0 +1,202 @@
+---
+title: "Module 3 — Distances and Ordination"
+format: html
+editor: source
+execute:
+  warning: false
+  message: false
+---
+
+> One pipeline, three knobs, both tables:
+> `tax_transform() |> dist_calc() |> ord_calc("PCoA") |> ord_plot()`
+
+```{r setup}
+library(tidyverse)
+library(here)
+library(microViz)
+library(phyloseq)
+
+source(here("R/count_tables.R"))
+
+# The grouping you built and saved in notebook 02. If it is not there yet, this
+# stops with a clear message instead of a confusing one.
+groups_file <- here("data/my_sample_groups.csv")
+if (!file.exists(groups_file)) {
+  stop("Could not find ", groups_file,
+       "\nGo back to notebook 02, Exercise 2, step 6 and save your per-sample ",
+       "table with the `community` column. Or rebuild it here: the Lactobacillus ",
+       "fraction from the species table, split at 0.5.", call. = FALSE)
+}
+sample_groups <- read_csv(groups_file)
+
+# as_counts() builds a phyloseq object from either count table. For the gene
+# table it hands microViz the gene annotation as the rank table, which is why
+# every microViz verb below works on genes.
+ps_species <- as_counts(table = "microbiome")
+ps_genes   <- as_counts(table = "rnaseq", min_count = 10, min_samples = 100)
+```
+
+```{r}
+ps_species
+ps_genes
+```
+
+```{r}
+# Add your community column to both objects so you can colour by it.
+add_groups <- function(ps) {
+  sd <- as(sample_data(ps), "data.frame") |>
+    rownames_to_column("sid") |>
+    left_join(sample_groups |> select(sample_id, community, lacto_fraction),
+              by = c("sid" = "sample_id")) |>
+    column_to_rownames("sid")
+  sample_data(ps) <- sample_data(sd)
+  ps
+}
+
+ps_species <- add_groups(ps_species)
+ps_genes   <- add_groups(ps_genes)
+```
+
+# Exercise 1: The species table
+
+## Part 1 — Predict (no code)
+
+**1. Our species table is about 89% zeros. Will Bray-Curtis or Jaccard separate the community types more clearly?**
+
+- *Your answer:*
+
+**2. Shuffling `outcome` randomly across 471 samples, what R2 would PERMANOVA report?**
+
+- *Your answer:*
+
+**3. Where will the 438-read sample sit in a Bray-Curtis ordination?**
+
+- *Your answer:*
+
+## Part 2 — Build
+
+```{r}
+# step 1: the pipeline once, with "identity" and "bray".
+#
+# ps_species |>
+#   tax_transform("identity", rank = "species") |>
+#   dist_calc("bray") |>
+#   ord_calc("PCoA") |>
+#   ord_plot(colour = "community")
+
+```
+
+```{r}
+# step 2: run it twice more, changing only transform and distance:
+#   "binary" with "jaccard"
+#   "clr"    with "euclidean"
+# Put all three side by side.
+
+```
+
+```{r}
+# step 3: colour your Bray-Curtis ordination by outcome, then time_point, then nugent.
+
+```
+
+```{r}
+# step 4: PERMANOVA.
+#
+# ps_species |>
+#   tax_transform("identity", rank = "species") |>
+#   dist_calc("bray") |>
+#   dist_permanova(variables = c("community", "outcome", "time_point", "rnaseq_batch"),
+#                  n_perms = 999, by = "margin")
+
+```
+
+```{r}
+# step 5: find the 438-read sample in the ordination. Was your prediction right?
+# Re-run without it and see whether anything else moves.
+
+```
+
+```{r}
+# step 6: the figure every 16S paper opens with.
+#
+# ps_species |> comp_barplot(tax_level = "Genus", n_taxa = 10)
+
+```
+
+## Part 3 — Check the agent
+
+- Ask Pi for the R2 of `outcome`, then what R2 a random label would give. If it does not say "close to zero but not zero", push back.
+  - *Your answer:*
+- Ask which `by =` it used for PERMANOVA and why it matters when variables are correlated.
+  - *Your answer:*
+- Ask it to interpret your ordination. It will write confident biology about axis 1. Ask what axis 1 actually is.
+  - *Your answer:*
+- Ask whether your three distances "agree", then look at the three plots and decide for yourself.
+  - *Your answer:*
+
+# Exercise 2: The identical pipeline on 14,000 genes
+
+## Part 1 — Predict (no code)
+
+**1. Would you use Bray-Curtis on gene counts? Why or why not?**
+
+- *Your answer:*
+
+**2. `community` explained about 18% of the species table. What share of the gene table?**
+
+- *Your answer:*
+
+**3. What share will `rnaseq_batch` explain?**
+
+- *Your answer:*
+
+## Part 2 — Build
+
+```{r}
+# step 1: the same pipeline on ps_genes, with "clr", "euclidean" and
+# rank = "symbol". Colour by community, then outcome, then rnaseq_batch.
+
+```
+
+```{r}
+# step 2: PERMANOVA with the same four variables. Put the species and gene R2
+# values side by side in one small table.
+
+```
+
+```{r}
+# step 3: look at the batch row. Add rnaseq_batch to the formula before outcome
+# and see whether the outcome R2 changes.
+
+```
+
+```{r}
+# step 4: is batch confounded with anything you care about? Cross-tabulate it
+# against outcome and against community.
+
+```
+
+*If the groups were unbalanced across batches, what would that mean for tomorrow's differential tests?*
+
+```{r}
+# step 5: try Bray-Curtis on the gene table too, just to see. Which do you believe?
+
+```
+
+## Part 3 — Check the agent
+
+- Ask Pi to compare the two R2 tables. It will probably say the gene table has "weaker biological signal". Is that justified? Write down what you expect tomorrow's gene-by-gene tests to find.
+  - *Your answer:*
+- Ask whether you should remove the batch effect, then ask it to do it. "Batch correction" covers several very different operations. Which did it pick?
+  - *Your answer:*
+- CLR cannot handle zeros without a pseudocount. Ask what pseudocount it used and where that number came from.
+  - *Your answer:*
+
+## Part 4 — Reach (optional)
+
+```{r}
+# Plot gene axis 1 against species axis 1 for the same samples.
+# That scatter plot is the simplest possible integration, and it is Friday's
+# opening question.
+
+```
