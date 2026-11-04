@@ -6,7 +6,7 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends libglpk40 \
  && rm -rf /var/lib/apt/lists/*
 
-# R packages for both workshops. See install-r-packages.R for what and why.
+# R packages for the workshop. See install-r-packages.R for what and why.
 COPY install-r-packages.R /tmp/install-r-packages.R
 RUN Rscript /tmp/install-r-packages.R && rm /tmp/install-r-packages.R
 

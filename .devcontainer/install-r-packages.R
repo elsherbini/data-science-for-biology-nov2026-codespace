@@ -13,14 +13,15 @@ options(
             getOption("repos"))
 )
 
-# Workshop 1: tidyverse extras not in the base image.
-workshop_1 <- c(
+# Extras not in the base image: here for file paths, palmerpenguins for
+# notebook 00, and table and plotting helpers group projects reach for.
+extras <- c(
   "here", "janitor", "gt", "palmerpenguins", "ggbeeswarm",
   "gtsummary", "ggpubr", "patchwork", "broom.helpers"
 )
 
-# Workshop 2: count tables, ordination, differential testing, enrichment.
-workshop_2 <- c(
+# Count tables, ordination, differential testing, enrichment.
+multiomics <- c(
   "vegan",                 # distances, PERMANOVA
   "msigdbr",               # Hallmark gene sets (human Hallmark ships with it)
   "pROC",                  # ROC curves and AUC for the Friday discussion
@@ -35,4 +36,4 @@ workshop_2 <- c(
 
 # pak resolves CRAN, Bioconductor and r-universe in one pass and will not
 # reinstall what the base image already has.
-pak::pkg_install(c(workshop_1, workshop_2), ask = FALSE)
+pak::pkg_install(c(extras, multiomics), ask = FALSE)

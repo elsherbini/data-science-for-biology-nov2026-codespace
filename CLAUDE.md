@@ -15,9 +15,9 @@ Do not explain what a gene or a bacterium is. Do explain what the code is doing.
 ## How this project is organized
 
 - `notebooks/` — starter Quarto (`.qmd`) notebooks, a mix of plain-language text
-  and runnable R code. The ones numbered for the current workshop are the ones I
-  am working through.
-- `data/` — the datasets. `data/2-workshop2/` holds the multiomics datasets.
+  and runnable R code. `00-hello-r` checks the setup, and `02` to `05` go with
+  the workshop's four coding modules.
+- `data/2-workshop2/` — the three multiomics datasets.
 - `R/count_tables.R` — a helper that loads a workshop dataset. See below.
 
 ## The multiomics datasets

@@ -5,7 +5,7 @@ workshop series. It runs entirely in **GitHub Codespaces**, so there is nothing
 to install on your computer. You only need a web browser and a free GitHub
 account.
 
-Current workshop: **Multiomics, microbiome and host gene expression**, Nairobi,
+This copy is for **Multiomics, microbiome and host gene expression**, Nairobi,
 9 to 13 November 2026.
 
 ## Getting started
@@ -28,11 +28,12 @@ Full step-by-step walkthrough:
 
 - `.devcontainer/` — defines the Codespace: R, the tidyverse, Quarto, the
   Bioconductor and microViz packages, and the Pi coding agent.
-- `notebooks/` — starter Quarto (`.qmd`) notebooks. For the multiomics workshop
-  these are `02-count-table-anatomy` through `05-enrichment`.
+- `notebooks/` — starter Quarto (`.qmd`) notebooks. `00-hello-r` checks your
+  setup, and `02-count-table-anatomy` through `05-enrichment` go with the four
+  coding modules.
 - `group_project/` — where your group project work goes. Its `README.md` has
   the prompts to start with.
-- `data/` — the datasets. The multiomics ones are under `data/2-workshop2/`.
+- `data/2-workshop2/` — the three datasets.
 - `R/count_tables.R` — loads a dataset, and builds the phyloseq object that lets
   microViz work on either count table.
 - `CLAUDE.md` — context about you that your AI assistant reads automatically
