@@ -9,6 +9,10 @@ execute:
 
 > Raw counts go into DESeq2. Never CPM, never logged. The method does its own
 > normalisation and feeding it normalised data breaks it.
+>
+> Pi writes the code and you decide what it means. Ask it to use `d` and
+> `metadata` from the setup chunk, and to put its code under the step you are
+> working on.
 
 ```{r setup}
 library(tidyverse)
@@ -53,67 +57,74 @@ count(metadata, time_point, community)
 
 - *Your answer:*
 
-## Part 2 — Build
+## Part 2 — Ask, look, decide
 
-```{r}
-# step 1: subset to week_18. Confirm 157 samples AND that the count matrix
-# columns are in the same order as the sample table rows.
-#
-# DESeq2 will not warn you about the order. It will just give you nonsense.
+### Step 1: set up and run the test
 
-```
+Suggested request: *Using `d` and `metadata` from the setup chunk, keep only
+the week 18 samples. Keep genes with a count of at least 10 in at least a
+quarter of those samples. Run DESeq2 on the raw counts with `~ community` and
+the contrast anaerobe against lactobacillus. Add gene symbols and names from
+`d$gene_info`. Save the results table to `data/genes_by_community.csv` with the
+columns `feature` (the Ensembl ID), `baseMean`, `log2FoldChange`, `lfcSE`,
+`stat`, `pvalue`, `padj`, `symbol` and `gene_name`.*
 
-```{r}
-# step 2: filter genes. Keep a gene with a count of at least 10 in at least a
-# quarter of the samples.
+Tomorrow's notebook reads that file.
 
-```
-
-```{r}
-# step 3: the three lines.
-#
-# dds <- DESeqDataSetFromMatrix(counts, sample_table, ~ community)
-# dds <- DESeq(dds)
-# res <- results(dds, contrast = c("community", "anaerobe", "lactobacillus"))
-
-```
-
-```{r}
-# step 4: how many genes at padj < 0.05? How many of those with |log2FC| > 1?
-
-```
-
-```{r}
-# step 5: join d$gene_info so you have symbols, sort by padj, read the top 20
-# names out loud to your group.
-
-```
-
-```{r}
-# step 6: volcano plot.
-
-```
-
-```{r}
-# step 7: boxplot of normalised counts for the top gene, by community.
-# The direction of this plot MUST match the sign of its log2FoldChange.
-
-```
-
-*Does the boxplot direction match the sign?*
-
-## Part 3 — Check the agent
-
-- Ask Pi how many genes were significant, then how many went in. If it cannot say both, it does not know what it did.
+- Samples in each group (37 and 120)? Genes tested (13,738)?
   - *Your answer:*
-- Ask it to explain your contrast's sign convention, then check it against step 7.
+- Do the first five count-table columns match the first five `sample_id` values, in order?
   - *Your answer:*
-- Ask for counts at `pvalue < 0.05` as well as `padj < 0.05`. The first should be far larger.
+
+### Step 2: a short report
+
+Suggested request: *Write a summary of the results: how many genes have
+`pvalue` below 0.05, how many have `padj` below 0.05, how many of those change
+more than two-fold, and how many go each way. Then list the top 20 genes by
+`padj` with symbol, name and fold change.*
+
+- Do you get 1,815 at `padj` below 0.05 and 303 of those more than two-fold?
   - *Your answer:*
-- Ask it to rerun the test on CPM instead of raw counts. It probably will. What happens, and why is it wrong?
+- What do the top 20 genes have in common?
   - *Your answer:*
+
+### Step 3: one result, four plots
+
+From here on, write your own requests. Volcano plot, MA plot, raw p-value
+histogram with the no-difference line, boxplots of the top six genes by
+community.
+
+- Pi's explanation of the sign convention:
+  - *Your answer:*
+- Does every boxplot agree with the sign of its fold change?
+  - *Your answer:*
+
+### Step 4: cutoffs are choices
+
+Genes passing at `padj` 0.01, 0.05, 0.1 crossed with fold change 0, 1.5, 2, 4.
+Then the test with a looser (10%) and a stricter (50%) gene filter.
+
+*The cutoffs I would report, and why:*
+
+### Step 5: argue with it
+
+Ask Pi to rerun on counts per million, then whether you should have used all
+471 samples.
+
+- What happened with counts per million, and why is it wrong?
+  - *Your answer:*
+- What did Pi say about using all 471 samples?
+  - *Your answer:*
+
+### Step 6: polish the volcano plot
+
+Top ten genes labelled, your own colours, direction in words under the x axis,
+dashed cutoff lines, saved as a PNG.
 
 # Exercise 2: The same test, on the species table
+
+Type `/new` in Pi before you start. Steps 3 and 5 each save a file that
+tomorrow's notebook reads.
 
 ## Part 1 — Predict (no code)
 
@@ -129,79 +140,71 @@ count(metadata, time_point, community)
 
 - *Your answer:*
 
-## Part 2 — Build
+## Part 2 — Ask, look, decide
 
-```{r}
-# step 1: week_18 again, and filter species to 10% prevalence.
+### Step 1: the default run
 
-```
+Suggested request: *Using `d` and `metadata` from the setup chunk, keep the
+week 18 samples and the species present in at least 10% of them. Run DESeq2 on
+the raw counts with `~ outcome` and the contrast preterm against term, with the
+default settings. Add `Genus` and `Family` from `d$taxonomy`, and list the
+significant species with their fold changes.*
 
-```{r}
-# step 2: same three lines, with ~ outcome and
-# contrast = c("outcome", "preterm", "term"). How many significant?
-
-```
-
-```{r}
-# step 3: how did DESeq2 normalise? Count species with no zero in any sample:
-#   sum(rowSums(counts == 0) == 0)
-# Then plot sizeFactors(dds) against each sample's L. iners share, both on log
-# scales.
-
-```
-
-*What are the size factors really measuring?*
-
-```{r}
-# step 4: rerun with size factors built for a table full of zeros. Keep this
-# version for the rest of the exercise and for tomorrow.
-#
-# dds <- DESeqDataSetFromMatrix(counts, sample_table, ~ outcome)
-# dds <- estimateSizeFactors(dds, type = "poscounts")
-# dds <- DESeq(dds)
-# res <- results(dds, contrast = c("outcome", "preterm", "term"))
-
-```
-
-```{r}
-# step 5: join d$taxonomy for readable names. List the top ten species by padj
-# with their fold changes, whether or not any pass. How many lean preterm?
-
-```
-
-```{r}
-# step 6: plot relative abundance of the top three species by outcome.
-# Proportions, not raw counts. Consider a log scale.
-
-```
-
-```{r}
-# step 7: now ask the same ~ outcome question of the GENE table and compare:
-# features tested, number significant, and what share of the significant ones
-# changed by more than a factor of two. Save these gene results: tomorrow's
-# enrichment notebook starts from them.
-
-```
-
-*What that comparison tells me about where the outcome signal lives:*
-
-## Part 3 — Check the agent
-
-- Ask Pi how many species it kept, then recompute it yourself from `rowMeans(counts > 0)`.
-  - *Your answer:*
-- Ask whether DESeq2 is appropriate for microbiome counts. This is a real controversy; a confident one-sided answer is a warning sign.
-  - *Your answer:*
-- Ask Pi how DESeq2 computed the species size factors, and how many species went into them. Compare with your step 3.
-  - *Your answer:*
-- Ask it to name the top species, then check two against `d$taxonomy` by hand. Agents invent plausible species names.
-  - *Your answer:*
-- Ask it to group by `nugent >= 7` instead. Fewer samples have a Nugent score. Does it tell you it dropped samples?
+- Species tested (53) and significant (19)? Do the names look like what you would expect?
   - *Your answer:*
 
-## Part 4 — Reach (optional)
+### Step 2: look behind it
 
-```{r}
-# Run species ~ outcome on all 471 samples, each participant appearing three times.
-# More samples gave you more hits. Are they real? What assumption did you break?
+Which species have no zero in any sample? Size factor against *L. iners* share,
+and against library size, both on log scales.
 
-```
+- What are the size factors measuring?
+  - *Your answer:*
+
+### Step 3: alternatives side by side
+
+Rerun with `type = "poscounts"` size factors and compare the two runs in one
+table. Save the poscounts version to `data/species_by_outcome.csv` with columns
+`feature`, `baseMean`, `log2FoldChange`, `lfcSE`, `stat`, `pvalue`, `padj`,
+`Genus` and `Family`.
+
+*Why the first list, which looked right, was not:*
+
+### Step 4: many views of a null result
+
+Top ten species by `padj`, then the top three by outcome as log-scale boxplots,
+as presence in each group, and across all three visits.
+
+- How many of the top ten lean toward preterm? Did the two names you checked exist in `d$taxonomy`?
+  - *Your answer:*
+- Which view is most honest about how weak the signal is?
+  - *Your answer:*
+
+### Step 5: the gene table against outcome
+
+The `~ outcome` test on genes, saved to `data/genes_by_outcome.csv`. Then one
+table comparing all three tests, and the two gene volcano plots side by side.
+
+- Do you get 1,698 significant, and 50 more than two-fold?
+  - *Your answer:*
+
+*What the comparison tells me about where the outcome signal lives:*
+
+### Step 6: argue with it
+
+Is DESeq2 appropriate for microbiome counts? Then the opposite case. Then the
+gene test grouped by Nugent score of 7 or more.
+
+- Which argument was stronger?
+  - *Your answer:*
+- Did Pi tell you it dropped samples for the Nugent grouping, and how many it kept?
+  - *Your answer:*
+
+## Part 3 — Reach (optional)
+
+Species against outcome on all 471 samples, compared with your 157-sample
+result. Then, if there is time, a short Quarto report ending in
+`## Choices made`.
+
+- More samples gave more hits. Are they real? What assumption did you break?
+  - *Your answer:*
