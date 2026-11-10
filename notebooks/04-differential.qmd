@@ -24,7 +24,7 @@ d <- read_counts("instructional")
 groups_file <- here("data/my_sample_groups.csv")
 if (!file.exists(groups_file)) {
   stop("Could not find ", groups_file,
-       "\nGo back to notebook 02, Exercise 2, step 6 and save your per-sample ",
+       "\nGo back to notebook 02, Exercise 2, step 5 and save your per-sample ",
        "table with the `community` column. Or rebuild it here: the Lactobacillus ",
        "fraction from the species table, split at 0.5.", call. = FALSE)
 }
