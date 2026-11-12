@@ -1,0 +1,241 @@
+---
+title: "Module 6 — Putting the Two Tables Together"
+format: html
+editor: source
+execute:
+  warning: false
+  message: false
+---
+
+> Draw what you think causes what, then check what each method can and cannot
+> tell you. This notebook is optional and was not run in the workshop. It reuses
+> the instructional dataset, and you already know how its outcome was built.
+>
+> Pi writes the code and you decide what it means. Ask it to use `d`, `people`,
+> `X_species`, `X_genes` and `y` from the setup chunk, and to put its code under
+> the step you are working on.
+
+```{r setup}
+library(tidyverse)
+library(here)
+library(pROC)
+library(msigdbr)
+
+# mixOmics was added to the Codespace after the workshop. Older Codespaces
+# install it here, once, which takes a few minutes.
+if (!requireNamespace("mixOmics", quietly = TRUE)) {
+  pak::pkg_install("bioc::mixOmics", ask = FALSE)
+}
+library(mixOmics)
+select <- dplyr::select   # mixOmics hides these two tidyverse functions
+map <- purrr::map
+
+source(here("R/count_tables.R"))
+
+d <- read_counts("instructional")
+
+# One row per person: every feature averaged over the three visits. That
+# avoids repeated measures, and it matches how the outcome was built.
+by_person <- function(m) {
+  pid <- d$metadata$participant_id[match(colnames(m), d$metadata$sample_id)]
+  t(sapply(sort(unique(pid)), function(p) rowMeans(m[, pid == p, drop = FALSE])))
+}
+
+# Species: centred log-ratio, kept if present in at least 10% of samples.
+sp <- d$species[rowMeans(d$species > 0) >= 0.10, ]
+clr <- function(m) { l <- log(m + 0.5); t(t(l) - colMeans(l)) }
+X_species <- by_person(clr(sp))
+
+# Genes: log counts per million, the 2,000 most variable expressed genes.
+cpm <- sweep(d$genes, 2, colSums(d$genes), "/") * 1e6
+lcpm <- log2(cpm[rowMeans(cpm) >= 5, ] + 1)
+X_genes_all <- by_person(lcpm)
+X_genes <- X_genes_all[, order(-apply(X_genes_all, 2, var))[1:2000]]
+
+# The two scores from the lecture, per person.
+lacto <- grepl("^lactobacillus", rownames(d$species))
+lacto_fraction <- colSums(d$species[lacto, ]) / colSums(d$species)
+inflam <- msigdbr(species = "Homo sapiens", collection = "H") |>
+  filter(gs_name %in% c("HALLMARK_INFLAMMATORY_RESPONSE", "HALLMARK_TNFA_SIGNALING_VIA_NFKB")) |>
+  pull(ensembl_gene) |> intersect(rownames(lcpm))
+host_score <- colMeans(t(scale(t(lcpm[inflam, ]))))
+
+people <- d$metadata |>
+  mutate(anaerobe_fraction = 1 - lacto_fraction[sample_id],
+         host_score = host_score[sample_id]) |>
+  group_by(participant_id, outcome) |>
+  summarise(micro_score = mean(anaerobe_fraction),
+            host_score = mean(host_score),
+            nugent = mean(nugent, na.rm = TRUE), .groups = "drop") |>
+  arrange(participant_id)
+
+y <- factor(people$outcome, levels = c("term", "preterm"))
+stopifnot(identical(people$participant_id, rownames(X_species)),
+          identical(people$participant_id, rownames(X_genes)))
+```
+
+```{r}
+dim(X_species)
+dim(X_genes)
+table(y)
+```
+
+# Exercise 1: Draw it first
+
+## Part 1 — Predict (no code)
+
+**1. Draw a DAG for preterm birth with paper and pen, or in [Excalidraw](https://excalidraw.com). Put in every column of the metadata, the species table, the gene table, and at least three things nobody measured.**
+
+- *Your answer (a photo or a list of arrows):*
+
+**2. In your drawing, which measured things are causes of preterm birth, and which are readouts of a cause?**
+
+- *Your answer:*
+
+**3. The lecture showed the DAG that built this outcome: mean anaerobe fraction and a hidden host-inflammation flag, independent of each other. Which arrow in your drawing does that DAG leave out?**
+
+- *Your answer:*
+
+## Part 2 — Ask, look, decide
+
+### Step 1: rank the predictors
+
+Suggested request: *Using `people`, compute the AUC for preterm birth of
+`micro_score`, `host_score` and `nugent`, one at a time, with pROC.*
+
+- Is Nugent closer to the anaerobe score or to the host score? Which of the three is a cause?
+  - *Your answer:*
+
+*One sentence on why a high AUC does not make Nugent a cause:*
+
+# Exercise 2: A baseline you can trust
+
+Type `/new` in Pi before you start.
+
+## Part 1 — Predict (no code)
+
+**1. The lecture reported AUC 0.84 for `preterm ~ micro_score + host_score`, fitted and tested on the same 157 people. Will the cross-validated AUC be higher, lower, or the same?**
+
+- *Your answer:*
+
+## Part 2 — Ask, look, decide
+
+### Step 1: cross-validate the two-score model
+
+Suggested request: *Using `people` and `y`, make 5 folds stratified by `y`.
+For each fold, fit `glm(y ~ micro_score + host_score, family = binomial)` on the
+other four folds and predict the held-out fold. Compute one AUC from all the
+held-out predictions. Repeat with 10 different fold splits and report the mean
+and standard deviation. Save the fold assignments, because Exercise 4 uses the
+same ones.*
+
+- Cross-validated AUC (about 0.83)? How much lower than 0.84?
+  - *Your answer:*
+- Why did it drop so little? (Count how many numbers the model learned.)
+  - *Your answer:*
+
+# Exercise 3: Shuffled labels
+
+Type `/new` in Pi before you start.
+
+## Part 1 — Predict (no code)
+
+**1. You shuffle `y` at random and fit sparse PLS-DA on 2,000 genes. Will the score plot on the training people show the two groups separated?**
+
+- *Your answer:*
+
+## Part 2 — Ask, look, decide
+
+### Step 1: real against shuffled, on the training people
+
+Suggested request: *Fit `splsda(X_genes, y, ncomp = 2, keepX = c(50, 50))`.
+Then shuffle `y` with `sample()`, fit the same model, and plot the component 1
+and component 2 scores of both fits side by side, coloured by the labels each
+was fitted to.*
+
+- Can you tell which plot is the real one?
+  - *Your answer:*
+
+### Step 2: the same comparison, cross-validated
+
+Suggested request: *Cross-validate both fits the way you did in Exercise 2,
+using the predicted preterm score from `predict()` on the held-out people.*
+
+- Real (about 0.72) and shuffled (about 0.5)?
+  - *Your answer:*
+
+### Step 3: the leak
+
+Ask Pi to pick the 50 genes with the smallest t-test p-value against the
+**shuffled** labels using all 157 people, and then cross-validate a glm or
+PLS-DA on only those 50 genes.
+
+- What AUC did a model of pure noise get? Which step should have been inside the folds?
+  - *Your answer:*
+
+# Exercise 4: Patterns, then DIABLO
+
+Type `/new` in Pi before you start.
+
+## Part 1 — Predict (no code)
+
+**1. Sparse PLS between `X_species` and `X_genes` uses no outcome. Will its first component line up with preterm birth, with community type, or with neither?**
+
+- *Your answer:*
+
+**2. DIABLO uses both tables and the outcome. Will it beat the two-score glm from Exercise 2?**
+
+- *Your answer:*
+
+## Part 2 — Ask, look, decide
+
+### Step 1: sparse PLS between the two tables
+
+Suggested request: *Fit `spls(X_species, X_genes, ncomp = 2, keepX = c(10, 10),
+keepY = c(50, 50), mode = "canonical")`. Plot the species component 1 scores
+against the gene component 1 scores, coloured by `y`. List the selected species
+and the gene symbols, using `d$gene_info`.*
+
+- What does the shared axis look like, in species terms?
+  - *Your answer:*
+
+### Step 2: how stable is the gene list?
+
+Suggested request: *Rerun the same sparse PLS on 50 bootstrap resamples of the
+people (give the resampled rows unique row names, or mixOmics stops). Count how
+often each gene is selected on component 1 and plot the frequencies.*
+
+- How many different genes were picked at least once? Was any picked every time?
+  - *Your answer:*
+- Pick one gene that was **not** selected in the full fit. How strongly does it correlate with the component 1 gene scores?
+  - *Your answer:*
+
+### Step 3: DIABLO, cross-validated
+
+Suggested request: *Fit `block.splsda(list(species = X_species, genes =
+X_genes), y, ncomp = 2, keepX = list(species = c(10, 10), genes = c(50, 50)))`
+with a design matrix of 0.1 between the two tables. Cross-validate it on the
+same folds as Exercise 2, using `AveragedPredict` for the preterm score, and
+also each table's own prediction.*
+
+- Species alone, genes alone, both (about 0.72, 0.73, 0.80)? The glm from Exercise 2?
+  - *Your answer:*
+- Why might two hand-picked scores beat a method that searched 2,059 features?
+  - *Your answer:*
+
+### Step 4: what the component is made of
+
+Ask Pi for the DIABLO loadings plot for the gene table on component 1.
+
+- Which genes are on the preterm side? Does that match the DAG?
+  - *Your answer:*
+
+*Is the loadings plot a list of the genes that differ most between preterm and term? What would you use for that instead?*
+
+## Part 3 — Reach (optional)
+
+Run DIABLO again with `y` set to the week 18 community type instead of preterm
+birth.
+
+- How well does the species table "predict" community type, and why is that not a finding?
+  - *Your answer:*

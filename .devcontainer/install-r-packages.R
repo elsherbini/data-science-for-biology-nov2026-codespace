@@ -31,6 +31,7 @@ multiomics <- c(
   "bioc::microbiome",      # microViz dependency
   "bioc::ComplexHeatmap",  # microViz dependency
   "bioc::fgsea",           # set enrichment on a ranked list
+  "bioc::mixOmics",        # sparse PLS and DIABLO, notebook 06
   "microViz"               # the pipeline the whole week uses
 )
 

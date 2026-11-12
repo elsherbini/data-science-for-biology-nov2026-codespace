@@ -29,8 +29,9 @@ Full step-by-step walkthrough:
 - `.devcontainer/` — defines the Codespace: R, the tidyverse, Quarto, the
   Bioconductor and microViz packages, and the Pi coding agent.
 - `notebooks/` — starter Quarto (`.qmd`) notebooks. `00-hello-r` checks your
-  setup, and `02-count-table-anatomy` through `05-enrichment` go with the four
-  coding modules.
+  setup, `02-count-table-anatomy` through `05-enrichment` go with the four
+  coding modules, and `06-integration` is an optional exercise for after the
+  workshop.
 - `group_project/` — where your group project work goes. Its `README.md` has
   the prompts to start with.
 - `data/2-workshop2/` — the three datasets.
